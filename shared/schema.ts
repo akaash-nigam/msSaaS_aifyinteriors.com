@@ -220,6 +220,8 @@ export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertDesign = z.infer<typeof insertDesignSchema>;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertDesignStyle = z.infer<typeof insertDesignStyleSchema>;
+export type InsertRoomType = z.infer<typeof insertRoomTypeSchema>;
 
 // ==================== API SCHEMAS ====================
 export const designGenerationSchema = z.object({

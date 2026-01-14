@@ -12,9 +12,9 @@ import {
   type Design,
   type InsertDesign,
   type DesignStyle,
-  type InsertDesignStyleSchema,
+  type InsertDesignStyle,
   type RoomType,
-  type InsertRoomTypeSchema,
+  type InsertRoomType,
   type Product,
   type InsertProduct,
   type CreditTransaction,
@@ -43,13 +43,13 @@ export interface IStorage {
   getDesignStyles(): Promise<DesignStyle[]>;
   getDesignStyle(id: number): Promise<DesignStyle | undefined>;
   getDesignStyleBySlug(slug: string): Promise<DesignStyle | undefined>;
-  createDesignStyle(style: typeof InsertDesignStyleSchema): Promise<DesignStyle>;
+  createDesignStyle(style: InsertDesignStyle): Promise<DesignStyle>;
 
   // Room Types
   getRoomTypes(): Promise<RoomType[]>;
   getRoomType(id: number): Promise<RoomType | undefined>;
   getRoomTypeBySlug(slug: string): Promise<RoomType | undefined>;
-  createRoomType(roomType: typeof InsertRoomTypeSchema): Promise<RoomType>;
+  createRoomType(roomType: InsertRoomType): Promise<RoomType>;
 
   // Products
   getProducts(options?: { limit?: number; styleId?: number }): Promise<Product[]>;
@@ -116,17 +116,53 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
-  async getUserDesigns(userId: number, options?: { limit?: number; offset?: number }): Promise<Design[]> {
+  async getUserDesigns(userId: number, options?: { limit?: number; offset?: number; styleId?: number; roomTypeId?: number; favoritesOnly?: boolean }): Promise<Design[]> {
     const limit = options?.limit || 20;
     const offset = options?.offset || 0;
 
-    return await db
+    let query = db
       .select()
       .from(designs)
-      .where(eq(designs.userId, userId))
+      .where(eq(designs.userId, userId));
+
+    if (options?.styleId) {
+      query = query.where(eq(designs.styleId, options.styleId)) as any;
+    }
+
+    if (options?.roomTypeId) {
+      query = query.where(eq(designs.roomTypeId, options.roomTypeId)) as any;
+    }
+
+    if (options?.favoritesOnly) {
+      query = query.where(eq(designs.isFavorite, true)) as any;
+    }
+
+    return await query
       .orderBy(desc(designs.createdAt))
       .limit(limit)
       .offset(offset);
+  }
+
+  async getUserDesignsCount(userId: number, options?: { styleId?: number; roomTypeId?: number; favoritesOnly?: boolean }): Promise<number> {
+    let query = db
+      .select({ count: sql<number>`count(*)` })
+      .from(designs)
+      .where(eq(designs.userId, userId));
+
+    if (options?.styleId) {
+      query = query.where(eq(designs.styleId, options.styleId)) as any;
+    }
+
+    if (options?.roomTypeId) {
+      query = query.where(eq(designs.roomTypeId, options.roomTypeId)) as any;
+    }
+
+    if (options?.favoritesOnly) {
+      query = query.where(eq(designs.isFavorite, true)) as any;
+    }
+
+    const result = await query;
+    return Number(result[0]?.count || 0);
   }
 
   async createDesign(design: InsertDesign): Promise<Design> {
@@ -168,7 +204,7 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
-  async createDesignStyle(style: any): Promise<DesignStyle> {
+  async createDesignStyle(style: InsertDesignStyle): Promise<DesignStyle> {
     const result = await db.insert(designStyles).values(style).returning();
     return result[0];
   }
@@ -193,7 +229,7 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
-  async createRoomType(roomType: any): Promise<RoomType> {
+  async createRoomType(roomType: InsertRoomType): Promise<RoomType> {
     const result = await db.insert(roomTypes).values(roomType).returning();
     return result[0];
   }
