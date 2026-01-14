@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { auth } from "firebase-admin";
+import { auth } from "../firebase-admin";
 import { storage } from "../storage";
 import { checkAndResetMonthlyCredits } from "../services/credits.service";
 
